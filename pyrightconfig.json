@@ -1,0 +1,6 @@
+{
+    "ignore": [
+        "RPi.GPIO"
+    ],
+    "reportMissingModuleSource": false
+} 
