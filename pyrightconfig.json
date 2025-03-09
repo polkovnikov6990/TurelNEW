@@ -2,5 +2,9 @@
     "ignore": [
         "RPi.GPIO"
     ],
-    "reportMissingModuleSource": false
+    "reportMissingModuleSource": false,
+    "venv": "venv",
+    "venvPath": ".",
+    "pythonVersion": "3.10.3",
+    "typeCheckingMode": "basic"
 } 
