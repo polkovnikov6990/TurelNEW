@@ -21,7 +21,7 @@ COPY upravl_mart.py .
 COPY turel_control.py .
 COPY config.py .
 COPY mock_gpio.py .
-COPY YOLOv8m.pt .  # Копируем вашу обученную модель
+COPY YOLOv8m.pt .
 
 # Создание и активация виртуального окружения
 RUN python3.10 -m venv venv
