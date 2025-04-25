@@ -1,15 +1,23 @@
-from queue import Queue
-from video_detection import DetectionThread  # Импортируем класс для обработки видео
-from turel_control import TurelControlThread  # Импортируем класс для управления шаговыми двигателями
 import cv2
 import time
 import queue
+from ultralytics import YOLO  # Импортируем модель YOLO
+from _video_detection import DetectionThread
+from queue import Queue
+from _turel_control import TurelControlThread
 
+frame_queue = Queue(maxsize=1)
+result_queue = Queue(maxsize=1)
 
-def capture_video():
-    # Очереди для передачи кадров между потоками
-    frame_queue = Queue(maxsize=1)
-    result_queue = Queue(maxsize=1)
+def main():
+    # Инициализация видеопотока (0 — стандартная веб-камера)
+    cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        print("Не удалось открыть камеру.")
+        return
+
+    # Загрузка модели YOLO (укажите путь к вашей модели, если используете кастомную)
+    model = YOLO("yolov8n.pt")  # 
     
     # Создание потоков для детекции и управления
     video_thread = DetectionThread(frame_queue, result_queue)  # Поток обработки видео
@@ -42,7 +50,12 @@ def capture_video():
             try:
                 if not result_queue.empty():
                     processed_frame = result_queue.get_nowait()
-                    cv2.imshow('Drone Detection', processed_frame)
+                    if processed_frame is not None:
+                        print("Показываю кадр")
+                        cv2.imshow('Drone Detection', processed_frame)
+                        print("Кадр показан")
+                    else:
+                        print("Обработанный кадр пустой!")
             except queue.Empty:
                 pass  # Если очередь пустая, просто пропускаем этот шаг
             
@@ -65,4 +78,4 @@ def capture_video():
         cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    capture_video()
+    main()

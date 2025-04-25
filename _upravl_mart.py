@@ -6,8 +6,8 @@ from queue import Queue
 import time
 import math
 from PIL import Image, ImageDraw, ImageFont
-from config import TARGET, CROSSHAIR, QUADRANTS, ARROW, FRAME_PROCESSING
-from turel_control import TurelController
+from _config import TARGET, CROSSHAIR, QUADRANTS, ARROW, FRAME_PROCESSING
+from _turel_control import TurelController
 
 def get_coordinates(frame, point):
     """
