@@ -1,98 +1,74 @@
-try:
-    import RPi.GPIO as GPIO
-    print("Используется реальный GPIO")
-except ImportError:
-    print("RPi.GPIO не доступен")
-    from mock_gpio import GPIO
-
+import threading
 import time
-from config import TARGET
-import math
 
 class TurelController:
     def __init__(self):
-        # Пины для горизонтального двигателя
-        self.HORIZONTAL_STEP_PIN = 17
-        self.HORIZONTAL_DIR_PIN = 18
-        self.HORIZONTAL_ENABLE_PIN = 23
-
-        # Пины для вертикального двигателя
-        self.VERTICAL_STEP_PIN = 22
-        self.VERTICAL_DIR_PIN = 27
-        self.VERTICAL_ENABLE_PIN = 24
-
-        # Параметры двигателей
-        self.STEPS_PER_REV = 200  # Количество шагов на оборот (для Nema 17)
-        self.MICROSTEPS = 16      # Микрошаги (зависит от драйвера)
-        self.GEAR_RATIO = 1       # Передаточное отношение (если используется редуктор)
-        
-        # Параметры точности
-        self.TOLERANCE = 5        # Допустимое отклонение в пикселях
-        self.STEPS_PER_PIXEL = 0.5  # Количество шагов на один пиксель
-
-        # Инициализация GPIO
-        self.setup_gpio()
-
-    def setup_gpio(self):
-        """Инициализация пинов GPIO"""
-        GPIO.setmode(GPIO.BCM)
-        
-        # Настройка пинов горизонтального двигателя
-        GPIO.setup(self.HORIZONTAL_STEP_PIN, GPIO.OUT)
-        GPIO.setup(self.HORIZONTAL_DIR_PIN, GPIO.OUT)
-        GPIO.setup(self.HORIZONTAL_ENABLE_PIN, GPIO.OUT)
-        
-        # Настройка пинов вертикального двигателя
-        GPIO.setup(self.VERTICAL_STEP_PIN, GPIO.OUT)
-        GPIO.setup(self.VERTICAL_DIR_PIN, GPIO.OUT)
-        GPIO.setup(self.VERTICAL_ENABLE_PIN, GPIO.OUT)
-        
-        # Включаем двигатели
-        GPIO.output(self.HORIZONTAL_ENABLE_PIN, GPIO.LOW)
-        GPIO.output(self.VERTICAL_ENABLE_PIN, GPIO.LOW)
-
-    def make_step(self, step_pin, direction_pin, direction):
-        """Выполнение одного шага"""
-        GPIO.output(direction_pin, direction)
-        GPIO.output(step_pin, GPIO.HIGH)
-        time.sleep(0.001)  # Задержка между шагами
-        GPIO.output(step_pin, GPIO.LOW)
-        time.sleep(0.001)
-
-    def move_to_target(self, target_x, target_y):
-        """
-        Перемещение турели к цели
-        target_x, target_y: координаты цели относительно центра кадра
-        """
-        # Определяем направление движения по горизонтали
-        horizontal_direction = GPIO.HIGH if target_x > 0 else GPIO.LOW
-        horizontal_steps = abs(int(target_x * self.STEPS_PER_PIXEL))
-
-        # Определяем направление движения по вертикали
-        vertical_direction = GPIO.HIGH if target_y > 0 else GPIO.LOW
-        vertical_steps = abs(int(target_y * self.STEPS_PER_PIXEL))
-
-        # Двигаемся к цели
-        for _ in range(max(horizontal_steps, vertical_steps)):
-            if horizontal_steps > 0:
-                self.make_step(self.HORIZONTAL_STEP_PIN, self.HORIZONTAL_DIR_PIN, horizontal_direction)
-                horizontal_steps -= 1
-            
-            if vertical_steps > 0:
-                self.make_step(self.VERTICAL_STEP_PIN, self.VERTICAL_DIR_PIN, vertical_direction)
-                vertical_steps -= 1
-
-    def is_on_target(self, target_x, target_y):
-        """Проверка, находится ли цель в пределах допуска"""
-        return abs(target_x) <= self.TOLERANCE and abs(target_y) <= self.TOLERANCE
-
-    def cleanup(self):
-        """Очистка GPIO при завершении работы"""
-        GPIO.cleanup()
-
-if __name__ == '__main__':
-    # Тестовый код
-    controller = TurelController()
+        # Инициализация шагового контроллера
+        print("Turel Controller initialized.")
     
-    # Пример движения
-    controller.move_to_target(50, 30)  # Движение вправо и вверх
+    def move(self, x: int, y: int):
+        # Пример метода для управления шаговыми двигателями
+        print(f"Moving to position: ({x}, {y})")
+    
+    def cleanup(self):
+        # Завершаем работу с контроллером
+        print("Cleaning up the controller resources.")
+
+
+class TurelControlThread(threading.Thread):
+    def __init__(self, result_queue):
+        """
+        Инициализация потока управления.
+        :param result_queue: Очередь, в которой ожидаются обработанные кадры.
+        """
+        super().__init__()
+        self.result_queue = result_queue
+        self.stop_flag = False
+        self.daemon = True
+        self.turel = TurelController()  # Инициализация контроллера
+
+    def run(self):
+        """
+        Основной цикл потока. Обрабатывает кадры из очереди result_queue.
+        """
+        while not self.stop_flag:
+            if not self.result_queue.empty():
+                frame = self.result_queue.get()  # Получаем кадр из очереди
+                self.process_frame(frame)  # Обрабатываем кадр
+
+    def process_frame(self, frame):
+        """
+        Обрабатывает кадр, извлекает целевую позицию и управляет устройством.
+        :param frame: Обработанный кадр
+        """
+        target_position = self.get_target_position_from_frame(frame)  # Получаем целевую позицию из кадра
+        if target_position:
+            self.move_turel(target_position)  # Если позиция найдена, управляем контроллером
+
+    def get_target_position_from_frame(self, frame):
+        """
+        Извлекает целевую позицию из кадра.
+        Пример: находит центр кадра (это нужно заменить на реальную логику).
+        :param frame: Кадр видео
+        :return: Кортеж (x, y) с координатами целевой позиции
+        """
+        height, width = frame.shape[:2]
+        center_x, center_y = width // 2, height // 2  # Пример: центр кадра
+        return (center_x, center_y)
+
+    def move_turel(self, target_position):
+        """
+        Преобразует координаты целевой позиции в команды для шагового двигателя.
+        :param target_position: Кортеж с координатами цели (x, y)
+        """
+        if target_position:
+            x, y = target_position
+            self.turel.move(x, y)  # Отправляем команду контроллеру для движения
+
+    def stop(self):
+        """
+        Останавливает поток, очищает ресурсы контроллера.
+        """
+        self.turel.cleanup()  # Очистка ресурсов контроллера
+        self.stop_flag = True  # Устанавливаем флаг остановки потока
+        print("TurelControlThread stopped.")

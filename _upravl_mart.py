@@ -47,22 +47,23 @@ def draw_crosshair(frame):
 
 def put_russian_text(img, text, org, font_scale, color, thickness=1):
     """Функция для отображения текста с поддержкой кириллицы"""
-    # Создаем изображение PIL из массива numpy
     pil_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
     draw = ImageDraw.Draw(pil_img)
+
+    # Попробуйте сначала этот путь, если шрифт установлен
+    font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
     
-    # Загружаем шрифт (укажите правильный путь к шрифту)
-    # Можно использовать любой шрифт с поддержкой кириллицы, например Arial.ttf
-    font = ImageFont.truetype("/System/Library/Fonts/Arial.ttf", int(font_scale * 30))
-    
-    # Рисуем текст
+    try:
+        font = ImageFont.truetype(font_path, int(font_scale * 30))
+    except IOError:
+        print(f"Шрифт не найден по пути: {font_path}. Используется шрифт по умолчанию.")
+        font = ImageFont.load_default()
+
     draw.text(org, text, font=font, fill=(color[2], color[1], color[0]))
-    
-    # Конвертируем обратно в BGR
+
     result_img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
-    
-    # Копируем только область с текстом обратно в исходное изображение
     return result_img
+
 
 def draw_quadrants(frame):
     height, width = frame.shape[:2]
