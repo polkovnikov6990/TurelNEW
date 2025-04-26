@@ -6,7 +6,7 @@ import config
 
 def main():
     # Загружаем вашу модель
-    model = YOLO('yolov8m.pt')
+    model = YOLO('yolov8n.pt')
 
     # Открываем камеру (0 — стандартная веб-камера)
     cap = cv2.VideoCapture(0)

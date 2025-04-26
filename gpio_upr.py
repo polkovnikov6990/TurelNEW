@@ -16,25 +16,22 @@ frame = np.zeros((480, 640, 3), dtype=np.uint8)
 
 # Функция для эмуляции работы шагового мотора
 def step_motor(direction, steps, axis="", frame=None):
-    # Эмуляция направления мотора
-    direction_str = "vpravo" if direction > 0 else "влево"
-    print(f"dvig motor  {axis} v napr {direction_str} на {abs(steps)} шагов.")
+    direction_str = "вправо" if direction > 0 else "влево"
+    print(f"Двигаем мотор {axis} в направлении {direction_str} на {abs(steps)} шагов.")
 
-    # Добавляем текст на экран (в правый нижний угол)
-    text = f"emul SHD po osi {axis}: {abs(steps)} шагов"
-    cv2.putText(frame, text, (frame.shape[1] - 400, frame.shape[0] - 30), 
-                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2, cv2.LINE_AA)
+    if frame is not None:
+        text = f"Эмуляция ШД по оси {axis}: {abs(steps)} шагов"
+        cv2.putText(frame, text, (frame.shape[1] - 400, frame.shape[0] - 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2, cv2.LINE_AA)
 
-    # Эмуляция шага
     for _ in range(abs(steps)):
-        # Отображаем шаги на экране
-        print(f"Шаг: включен шаг {axis}...")  # Эмуляция шага
         time.sleep(STEP_DELAY)
-        print(f"Шаг: выключен шаг {axis}...")  # Эмуляция выключения
-        time.sleep(STEP_DELAY)
+        if frame is not None:
+            cv2.imshow('Эмуляция ШД', frame)
+            cv2.waitKey(1)  # Для корректного отображения
 
-        # Обновляем изображение
-        cv2.imshow('emul SHD', frame)
+    if frame is not None:
+        cv2.destroyAllWindows()
 
 def move_by_deviation(x_dev, y_dev, threshold=10, step_scale=0.1):
     # Преобразуем пиксели в шаги
