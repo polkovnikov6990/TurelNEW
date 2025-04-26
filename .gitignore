@@ -32,7 +32,6 @@ env/
 *.swo
 
 # Модели YOLOv8
-*.pt
 
 # Системные файлы
 .DS_Store
